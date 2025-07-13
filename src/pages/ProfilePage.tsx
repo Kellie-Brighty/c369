@@ -3,15 +3,16 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useAuthProtected } from "../hooks/useAuthProtected";
 import { useAuth } from "../contexts/AuthContext";
 import AuthModal from "../components/AuthModal";
+import ThemeToggle from "../components/ThemeToggle";
 import {
-  Moon,
-  Sun,
   Bell,
   CreditCard,
   User,
   Settings,
   ChevronRight,
   LogOut,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 const ProfilePage = () => {
@@ -85,18 +86,31 @@ const ProfilePage = () => {
             title="Notifications"
             subtitle="Manage your notifications"
           />
-          <ProfileItem
-            icon={
-              isDark ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              toggleTheme();
+            }}
+            className="w-full bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-md hover:shadow-lg transition-all flex items-center gap-4"
+          >
+            <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
+              {isDark ? (
                 <Sun className="text-brand-red" size={24} />
               ) : (
                 <Moon className="text-brand-red" size={24} />
-              )
-            }
-            title="Theme"
-            subtitle={isDark ? "Switch to light mode" : "Switch to dark mode"}
-            onClick={toggleTheme}
-          />
+              )}
+            </div>
+            <div className="flex-1 text-left">
+              <h3 className="font-semibold text-gray-800 dark:text-white">
+                Theme
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {isDark ? "Switch to light mode" : "Switch to dark mode"}
+              </p>
+            </div>
+            <ThemeToggle isDark={isDark} onChange={toggleTheme} />
+          </button>
           <ProfileItem
             icon={<Settings className="text-brand-red" size={24} />}
             title="Settings"

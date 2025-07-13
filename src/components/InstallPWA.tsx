@@ -1,26 +1,27 @@
 import { useState, useEffect } from "react";
-import { Download } from "lucide-react";
+import { Download, Share } from "lucide-react";
 
 export const InstallPWA = () => {
   const [supportsPWA, setSupportsPWA] = useState(false);
   const [promptInstall, setPromptInstall] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
+    // Check if iOS
+    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
+
     const handler = (e: any) => {
-      console.log("PWA install prompt detected");
       e.preventDefault();
       setPromptInstall(e);
       setSupportsPWA(true);
     };
     window.addEventListener("beforeinstallprompt", handler);
 
-    // Check if installed
     const checkInstalled = () => {
       const isStandalone = window.matchMedia(
         "(display-mode: standalone)"
       ).matches;
-      console.log("PWA status:", { isStandalone, supportsPWA });
       setIsInstalled(isStandalone);
     };
     checkInstalled();
@@ -38,10 +39,25 @@ export const InstallPWA = () => {
     }
   };
 
-  if (!supportsPWA || isInstalled) {
-    console.log("PWA button hidden:", { supportsPWA, isInstalled });
-    return null;
+  if (isInstalled) return null;
+
+  if (isIOS) {
+    return (
+      <div className="fixed bottom-20 right-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg max-w-[250px] z-50">
+        <div className="flex items-center gap-2 mb-2">
+          <Share size={20} className="text-brand-red" />
+          <span className="font-medium text-gray-800 dark:text-white">
+            Install App
+          </span>
+        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Please open in Safari, tap Share, then 'Add to Home Screen'
+        </p>
+      </div>
+    );
   }
+
+  if (!supportsPWA) return null;
 
   return (
     <button
