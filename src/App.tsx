@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import DesktopView from "./components/DesktopView";
 import MobileView from "./components/MobileView";
+import { InstallPWA } from "./components/InstallPWA";
 import useViewport from "./hooks/useViewport";
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
         <Outlet />
       </main>
       <MobileView />
+      <InstallPWA />
     </div>
   );
 

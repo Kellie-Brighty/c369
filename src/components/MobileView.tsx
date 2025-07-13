@@ -5,7 +5,7 @@ const MobileView = () => {
   const location = useLocation();
   const navItems = [
     { href: "/", icon: Home, label: "Home" },
-    { href: "/ai", icon: Bot, label: "AI" },
+    { href: "/ai-assistant", icon: Bot, label: "AI" },
     { href: "/lounge", icon: ShieldQuestion, label: "Lounge" },
     { href: "/profile", icon: User, label: "Profile" },
   ];

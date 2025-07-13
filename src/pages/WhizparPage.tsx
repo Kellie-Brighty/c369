@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuthProtected } from "../hooks/useAuthProtected";
+import AuthModal from "../components/AuthModal";
 import {
   ShieldQuestion,
   MessageSquare,
@@ -9,6 +11,8 @@ import {
 } from "lucide-react";
 
 const WhizparPage = () => {
+  const { showAuthModal, setShowAuthModal, protectedAction } =
+    useAuthProtected("Lounge");
   const [posts] = useState([
     {
       id: 1,
@@ -17,6 +21,7 @@ const WhizparPage = () => {
       text: "Just hit a new PR on deadlifts! 💪 Any tips for maintaining form as weight increases?",
       likes: 4,
       comments: 2,
+      isLiked: false,
     },
     {
       id: 2,
@@ -25,8 +30,30 @@ const WhizparPage = () => {
       text: "The new equipment in the cardio section is amazing! Loving the upgraded treadmills 🏃‍♂️",
       likes: 8,
       comments: 3,
+      isLiked: false,
     },
   ]);
+
+  const handlePost = () => {
+    protectedAction(() => {
+      // Actual post creation logic
+      console.log("Creating post");
+    });
+  };
+
+  const handleLike = (postId: number) => {
+    protectedAction(() => {
+      // Actual like logic
+      console.log("Liking post", postId);
+    });
+  };
+
+  const handleComment = (postId: number) => {
+    protectedAction(() => {
+      // Actual comment logic
+      console.log("Commenting on post", postId);
+    });
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -63,7 +90,10 @@ const WhizparPage = () => {
               <button className="p-2 hover:bg-white dark:hover:bg-gray-800 rounded-xl transition-colors">
                 <ImageIcon size={20} className="text-brand-red" />
               </button>
-              <button className="px-6 py-2 bg-brand-red text-white rounded-xl font-medium flex items-center gap-2 hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20 active:scale-95">
+              <button
+                onClick={handlePost}
+                className="px-6 py-2 bg-brand-red text-white rounded-xl font-medium flex items-center gap-2 hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20 active:scale-95"
+              >
                 <Send size={16} /> Share
               </button>
             </div>
@@ -95,14 +125,20 @@ const WhizparPage = () => {
                 </p>
                 <div className="flex items-center justify-between">
                   <div className="flex gap-4">
-                    <button className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors group">
+                    <button
+                      onClick={() => handleLike(post.id)}
+                      className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors group"
+                    >
                       <Heart
                         size={20}
                         className="group-hover:scale-110 transition-transform"
                       />
                       <span className="text-sm font-medium">{post.likes}</span>
                     </button>
-                    <button className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors group">
+                    <button
+                      onClick={() => handleComment(post.id)}
+                      className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors group"
+                    >
                       <MessageSquare
                         size={20}
                         className="group-hover:scale-110 transition-transform"
@@ -121,6 +157,12 @@ const WhizparPage = () => {
           ))}
         </div>
       </main>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        feature="Lounge"
+      />
     </div>
   );
 };

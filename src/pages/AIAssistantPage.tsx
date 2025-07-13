@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Bot, Send, User, Sparkles } from "lucide-react";
+import { useAuthProtected } from "../hooks/useAuthProtected";
+import AuthModal from "../components/AuthModal";
 
 const AIAssistantPage = () => {
-  const [messages] = useState([
+  const [messages, setMessages] = useState([
     {
       from: "bot",
       text: "Hello! How can I help you with your fitness goals today?",
@@ -10,10 +12,28 @@ const AIAssistantPage = () => {
     { from: "user", text: "What's a good workout for beginners?" },
   ]);
   const [input, setInput] = useState("");
+  const { showAuthModal, setShowAuthModal, protectedAction } =
+    useAuthProtected("AI Assistant");
 
   const sendMessage = () => {
     if (input.trim() === "") return;
-    setInput("");
+    protectedAction(() => {
+      // Add user message
+      setMessages((prev) => [...prev, { from: "user", text: input.trim() }]);
+
+      // Simulate bot response (replace with actual AI call)
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            from: "bot",
+            text: "I'm processing your request. This is a placeholder response. In production, this will be connected to the AI backend.",
+          },
+        ]);
+      }, 1000);
+
+      setInput("");
+    });
   };
 
   return (
@@ -28,7 +48,9 @@ const AIAssistantPage = () => {
               <h1 className="text-lg font-bold text-gray-800 dark:text-white">
                 AI Health Assistant
               </h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Powered by C369 Fitness</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Powered by C369 Fitness
+              </p>
             </div>
           </div>
           <button className="p-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-xl transition-colors">
@@ -58,13 +80,22 @@ const AIAssistantPage = () => {
                     : "bg-white dark:bg-gray-800 shadow-md rounded-bl-none"
                 }`}
               >
-                <p className={msg.from === "user" ? "text-white" : "text-gray-800 dark:text-gray-200"}>
+                <p
+                  className={
+                    msg.from === "user"
+                      ? "text-white"
+                      : "text-gray-800 dark:text-gray-200"
+                  }
+                >
                   {msg.text}
                 </p>
               </div>
               {msg.from === "user" && (
                 <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 shadow-md">
-                  <User size={18} className="text-gray-600 dark:text-gray-400" />
+                  <User
+                    size={18}
+                    className="text-gray-600 dark:text-gray-400"
+                  />
                 </div>
               )}
             </div>
@@ -90,6 +121,12 @@ const AIAssistantPage = () => {
           </button>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        feature="AI Assistant"
+      />
     </div>
   );
 };

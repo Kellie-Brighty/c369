@@ -5,8 +5,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        "brand-red": "#DC2626", // Deeper red (red-600)
+        "brand-red": "#CC0000",
         "brand-dark": "#1A1A1A",
+      },
+      fontFamily: {
+        luviic: ["Luviic", "sans-serif"],
+        opensans: ["Open Sans", "sans-serif"],
       },
     },
   },
