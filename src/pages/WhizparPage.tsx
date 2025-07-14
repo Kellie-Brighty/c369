@@ -161,7 +161,7 @@ const WhizparPage = () => {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        feature="Lounge"
+        // feature="Lounge"
       />
     </div>
   );

@@ -1,58 +1,149 @@
 import type { ReactNode } from "react";
 import { useTheme } from "../contexts/ThemeContext";
-import { useAuthProtected } from "../hooks/useAuthProtected";
-import { useAuth } from "../contexts/AuthContext";
-import AuthModal from "../components/AuthModal";
-import ThemeToggle from "../components/ThemeToggle";
+import { useAuth } from "../hooks/useAuth";
 import {
-  Bell,
   CreditCard,
   User,
-  Settings,
   ChevronRight,
   LogOut,
   Sun,
   Moon,
+  Crown,
 } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
+import { LogoutModal } from "../components/LogoutModal";
+import { MembershipModal } from "../components/MembershipModal";
+import { useState } from "react";
+import {
+  updateMembership,
+  getMembershipDetails,
+  type PlanId,
+} from "../services/membershipService";
+import { MembershipQR } from "../components/MembershipQR";
 
 const ProfilePage = () => {
   const { isDark, toggleTheme } = useTheme();
-  const { showAuthModal, setShowAuthModal, protectedAction } =
-    useAuthProtected("Profile");
-  const { isAuthenticated, user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showMembershipModal, setShowMembershipModal] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [membershipQR, setMembershipQR] = useState({
+    qrCode: "",
+    expiryDate: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleProfileAction = () => {
-    protectedAction(() => {
-      // Profile update logic here
-      console.log("Profile action triggered");
-    });
+  const refreshMembershipDetails = async () => {
+    try {
+      const details = await getMembershipDetails();
+      if (details?.membershipQR && details?.membershipExpiryDate) {
+        setMembershipQR({
+          qrCode: details.membershipQR,
+          expiryDate: details.membershipExpiryDate,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch membership details:", error);
+    }
+  };
+
+  const handleMembershipClick = async () => {
+    const membershipType = profile?.membershipType || "free";
+    if (membershipType === "free") {
+      setShowMembershipModal(true);
+    } else {
+      await refreshMembershipDetails();
+      setShowQRModal(true);
+    }
+  };
+
+  const handleLogout = () => {
+    setShowLogoutModal(false);
+    logout();
+  };
+
+  const handleUpgrade = async (planId: PlanId) => {
+    try {
+      setIsLoading(true);
+      const result = await updateMembership(planId);
+      setMembershipQR({ qrCode: result.qrCode, expiryDate: result.expiryDate });
+      setShowMembershipModal(false);
+      setShowQRModal(true);
+      await refreshMembershipDetails();
+    } catch (error) {
+      console.error("Failed to upgrade membership:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const MembershipTag = ({ type }: { type: string }) => {
+    const isPremium = type !== "free";
+    return (
+      <div
+        className={`px-3 py-1 rounded-full text-sm font-medium ${
+          isPremium
+            ? "bg-brand-red text-white"
+            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+        }`}
+      >
+        {isPremium && <Crown size={14} className="inline-block mr-1" />}
+        {type === "free" ? "Free Plan" : type}
+      </div>
+    );
   };
 
   const ProfileItem = ({
     icon,
     title,
     subtitle,
-    onClick = handleProfileAction,
+    onClick,
+    tag,
+    showUpgrade,
   }: {
     icon: ReactNode;
     title: string;
     subtitle: string;
     onClick?: () => void;
+    tag?: string;
+    showUpgrade?: boolean;
   }) => (
     <button
       onClick={onClick}
-      className="w-full bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-md hover:shadow-lg transition-all flex items-center gap-4"
+      className="w-full bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-md hover:shadow-lg transition-all"
     >
-      <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
-        {icon}
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
+          {icon}
+        </div>
+        <div className="flex-1 text-left">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-semibold text-gray-800 dark:text-white">
+              {title}
+            </h3>
+            {tag && <MembershipTag type={tag} />}
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>
+        </div>
+        {showUpgrade ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMembershipModal(true);
+            }}
+            className="px-4 py-1 bg-brand-red text-white text-sm rounded-full hover:bg-red-700 transition-colors"
+          >
+            Upgrade
+          </button>
+        ) : (
+          <ChevronRight className="text-gray-400" size={20} />
+        )}
       </div>
-      <div className="flex-1 text-left">
-        <h3 className="font-semibold text-gray-800 dark:text-white">{title}</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>
-      </div>
-      <ChevronRight className="text-gray-400" size={20} />
     </button>
   );
+
+  const membershipType = profile?.membershipType || "free";
+  const isFreePlan = membershipType === "free";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-24 px-4 pb-24">
@@ -62,12 +153,13 @@ const ProfilePage = () => {
             <User className="text-white" size={40} />
           </div>
           <div className="text-center">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-              {isAuthenticated ? user?.name : "Guest User"}
-            </h2>
-            <p className="text-gray-500 dark:text-gray-400">
-              {isAuthenticated ? user?.email : "Sign in to access all features"}
-            </p>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+                {profile?.name || user?.email?.split("@")[0]}
+              </h2>
+              <MembershipTag type={membershipType} />
+            </div>
+            <p className="text-gray-500 dark:text-gray-400">{user?.email}</p>
           </div>
         </div>
 
@@ -76,22 +168,16 @@ const ProfilePage = () => {
             icon={<CreditCard className="text-brand-red" size={24} />}
             title="Membership"
             subtitle={
-              isAuthenticated
-                ? "Active until July 2025"
-                : "View your membership status"
+              isFreePlan
+                ? "Upgrade to access premium features"
+                : "View or upgrade your membership"
             }
-          />
-          <ProfileItem
-            icon={<Bell className="text-brand-red" size={24} />}
-            title="Notifications"
-            subtitle="Manage your notifications"
+            onClick={handleMembershipClick}
+            showUpgrade={isFreePlan}
           />
           <button
             type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              toggleTheme();
-            }}
+            onClick={toggleTheme}
             className="w-full bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-md hover:shadow-lg transition-all flex items-center gap-4"
           >
             <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
@@ -112,25 +198,33 @@ const ProfilePage = () => {
             <ThemeToggle isDark={isDark} onChange={toggleTheme} />
           </button>
           <ProfileItem
-            icon={<Settings className="text-brand-red" size={24} />}
-            title="Settings"
-            subtitle="App preferences"
+            icon={<LogOut className="text-brand-red" size={24} />}
+            title="Logout"
+            subtitle="Sign out of your account"
+            onClick={() => setShowLogoutModal(true)}
           />
-          {isAuthenticated && (
-            <ProfileItem
-              icon={<LogOut className="text-brand-red" size={24} />}
-              title="Logout"
-              subtitle="Sign out of your account"
-              onClick={logout}
-            />
-          )}
         </div>
       </div>
 
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        feature="Profile"
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+      />
+
+      <MembershipModal
+        isOpen={showMembershipModal}
+        onClose={() => setShowMembershipModal(false)}
+        onUpgrade={handleUpgrade}
+        isLoading={isLoading}
+        currentPlan={profile?.membershipType as PlanId}
+      />
+
+      <MembershipQR
+        qrData={membershipQR.qrCode}
+        expiryDate={membershipQR.expiryDate}
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
       />
     </div>
   );

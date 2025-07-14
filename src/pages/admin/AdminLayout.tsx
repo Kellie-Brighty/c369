@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import useViewport from "../../hooks/useViewport";
+import { useAuth } from "../../hooks/useAuth";
 
 type Action = {
   icon: React.ElementType;
@@ -80,11 +81,12 @@ export const AdminLayout = () => {
   const { width } = useViewport();
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const isMobile = width < 768;
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem("adminAuth");
+  const handleLogout = async () => {
+    await logout();
     navigate("/admin/auth");
   };
 
@@ -237,3 +239,4 @@ export const AdminLayout = () => {
     </div>
   );
 };
+ 

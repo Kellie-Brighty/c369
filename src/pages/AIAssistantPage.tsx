@@ -125,7 +125,7 @@ const AIAssistantPage = () => {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        feature="AI Assistant"
+        // feature="AI Assistant"
       />
     </div>
   );
