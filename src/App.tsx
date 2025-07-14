@@ -15,7 +15,7 @@ function App() {
       </main>
       <MobileView />
       <InstallPWA />
-      </div>
+    </div>
   );
 
   return width < breakpoint ? <MobileLayout /> : <DesktopView />;

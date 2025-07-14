@@ -13,10 +13,12 @@ import {
 import ThemeToggle from "../components/ThemeToggle";
 import { LogoutModal } from "../components/LogoutModal";
 import { MembershipModal } from "../components/MembershipModal";
+import { CancelMembershipModal } from "../components/CancelMembershipModal";
 import { useState } from "react";
 import {
   updateMembership,
   getMembershipDetails,
+  cancelMembership,
   type PlanId,
 } from "../services/membershipService";
 import { MembershipQR } from "../components/MembershipQR";
@@ -26,6 +28,7 @@ const ProfilePage = () => {
   const { user, profile, logout } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showMembershipModal, setShowMembershipModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [membershipQR, setMembershipQR] = useState({
     qrCode: "",
@@ -77,6 +80,19 @@ const ProfilePage = () => {
     }
   };
 
+  const handleCancel = async () => {
+    try {
+      setIsLoading(true);
+      await cancelMembership();
+      await refreshMembershipDetails();
+      setShowCancelModal(false);
+    } catch (error) {
+      console.error("Failed to cancel membership:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const MembershipTag = ({ type }: { type: string }) => {
     const isPremium = type !== "free";
     return (
@@ -100,6 +116,7 @@ const ProfilePage = () => {
     onClick,
     tag,
     showUpgrade,
+    showCancel,
   }: {
     icon: ReactNode;
     title: string;
@@ -107,6 +124,7 @@ const ProfilePage = () => {
     onClick?: () => void;
     tag?: string;
     showUpgrade?: boolean;
+    showCancel?: boolean;
   }) => (
     <button
       onClick={onClick}
@@ -134,6 +152,17 @@ const ProfilePage = () => {
             className="px-4 py-1 bg-brand-red text-white text-sm rounded-full hover:bg-red-700 transition-colors"
           >
             Upgrade
+          </button>
+        ) : showCancel ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowCancelModal(true);
+            }}
+            className="px-4 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            disabled={isLoading}
+          >
+            Cancel
           </button>
         ) : (
           <ChevronRight className="text-gray-400" size={20} />
@@ -174,6 +203,7 @@ const ProfilePage = () => {
             }
             onClick={handleMembershipClick}
             showUpgrade={isFreePlan}
+            showCancel={!isFreePlan}
           />
           <button
             type="button"
@@ -220,6 +250,13 @@ const ProfilePage = () => {
         currentPlan={profile?.membershipType as PlanId}
       />
 
+      <CancelMembershipModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleCancel}
+        isLoading={isLoading}
+      />
+
       <MembershipQR
         qrData={membershipQR.qrCode}
         expiryDate={membershipQR.expiryDate}
@@ -231,3 +268,4 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
+ 
