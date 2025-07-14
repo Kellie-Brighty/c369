@@ -17,6 +17,7 @@ import MembershipsPage from "../pages/admin/MembershipsPage";
 import ContentPage from "../pages/admin/ContentPage";
 import ModerationPage from "../pages/admin/ModerationPage";
 import SettingsPage from "../pages/admin/SettingsPage";
+import VerifyMembership from "../pages/VerifyMembership";
 import App from "../App";
 import { useAuth } from "../hooks/useAuth";
 import { AuthProvider } from "../contexts/AuthContext";
@@ -69,6 +70,10 @@ export const router = createBrowserRouter([
         ),
       },
     ],
+  },
+  {
+    path: "verify",
+    element: <VerifyMembership />,
   },
   {
     path: "admin/auth",
