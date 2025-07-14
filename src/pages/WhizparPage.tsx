@@ -1,168 +1,154 @@
-import { useState } from "react";
-import { useAuthProtected } from "../hooks/useAuthProtected";
-import AuthModal from "../components/AuthModal";
+import { useState, useEffect } from "react";
 import {
-  ShieldQuestion,
-  MessageSquare,
-  Heart,
-  Image as ImageIcon,
-  Send,
-  Sparkles,
-} from "lucide-react";
+  createPost,
+  subscribeToPosts,
+  type WhizparPost,
+} from "../services/whizparService";
+import { Plus, Image as ImageIcon, Send, X, Loader } from "lucide-react";
+import { Modal } from "../components/Modal";
+import { PostCard } from "../components/PostCard";
+import whizparLogo from "../assets/whizpar.png";
 
 const WhizparPage = () => {
-  const { showAuthModal, setShowAuthModal, protectedAction } =
-    useAuthProtected("Lounge");
-  const [posts] = useState([
-    {
-      id: 1,
-      author: "Anonymous_9795",
-      time: "7d",
-      text: "Just hit a new PR on deadlifts! 💪 Any tips for maintaining form as weight increases?",
-      likes: 4,
-      comments: 2,
-      isLiked: false,
-    },
-    {
-      id: 2,
-      author: "Anonymous_6768",
-      time: "2h",
-      text: "The new equipment in the cardio section is amazing! Loving the upgraded treadmills 🏃‍♂️",
-      likes: 8,
-      comments: 3,
-      isLiked: false,
-    },
-  ]);
+  const [posts, setPosts] = useState<WhizparPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPosting, setIsPosting] = useState(false);
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [text, setText] = useState("");
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
 
-  const handlePost = () => {
-    protectedAction(() => {
-      // Actual post creation logic
-      console.log("Creating post");
+  useEffect(() => {
+    const unsubscribe = subscribeToPosts((newPosts) => {
+      setPosts(newPosts);
+      setIsLoading(false);
     });
+    return () => unsubscribe();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+
+    try {
+      setIsPosting(true);
+      await createPost(text, mediaFile || undefined);
+      setText("");
+      setMediaFile(null);
+      setMediaPreview(null);
+      setShowPostModal(false);
+    } catch (error) {
+      console.error("Error creating post:", error);
+    } finally {
+      setIsPosting(false);
+    }
   };
 
-  const handleLike = (postId: number) => {
-    protectedAction(() => {
-      // Actual like logic
-      console.log("Liking post", postId);
-    });
-  };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith("image/")) return;
 
-  const handleComment = (postId: number) => {
-    protectedAction(() => {
-      // Actual comment logic
-      console.log("Commenting on post", postId);
-    });
+    setMediaFile(file);
+    setMediaPreview(URL.createObjectURL(file));
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 pb-24">
+      {/* Header */}
       <header className="fixed top-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-b border-gray-100 dark:border-gray-800 z-10">
         <div className="flex items-center justify-between p-4 max-w-2xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-red flex items-center justify-center shadow-lg shadow-red-500/20">
-              <ShieldQuestion className="text-white" size={24} />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-800 dark:text-white">
-                The Anonymous Lounge
-              </h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Share your fitness journey freely
-              </p>
-            </div>
+            <img
+              src={whizparLogo}
+              alt="Whizpar"
+              className="w-10 h-10 rounded-xl"
+            />
+            <h1 className="text-lg font-bold text-gray-800 dark:text-white">
+              Whizpar
+            </h1>
           </div>
-          <button className="p-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-xl transition-colors">
-            <Sparkles className="text-brand-red" size={20} />
-          </button>
         </div>
       </header>
 
-      <main className="pt-24 px-4 pb-24">
-        <div className="max-w-2xl mx-auto space-y-6">
-          {/* Post Creation */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden">
-            <textarea
-              className="w-full p-4 border-none focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900 resize-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800 min-h-[100px]"
-              placeholder="Share your fitness journey anonymously..."
-            />
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-              <button className="p-2 hover:bg-white dark:hover:bg-gray-800 rounded-xl transition-colors">
-                <ImageIcon size={20} className="text-brand-red" />
-              </button>
-              <button
-                onClick={handlePost}
-                className="px-6 py-2 bg-brand-red text-white rounded-xl font-medium flex items-center gap-2 hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20 active:scale-95"
-              >
-                <Send size={16} /> Share
-              </button>
-            </div>
-          </div>
-
-          {/* Posts Feed */}
+      {isLoading ? (
+        <div className="flex items-center justify-center h-64">
+          <Loader className="w-8 h-8 text-brand-red animate-spin" />
+        </div>
+      ) : (
+        <div className="max-w-2xl mx-auto px-4 space-y-6">
           {posts.map((post) => (
-            <div
-              key={post.id}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center shadow-sm">
-                    <ShieldQuestion
-                      size={20}
-                      className="text-gray-500 dark:text-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-700 dark:text-gray-200">
-                      {post.author}
-                    </p>
-                    <p className="text-xs text-gray-400">{post.time}</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 dark:text-gray-200 mb-4 leading-relaxed">
-                  {post.text}
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => handleLike(post.id)}
-                      className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors group"
-                    >
-                      <Heart
-                        size={20}
-                        className="group-hover:scale-110 transition-transform"
-                      />
-                      <span className="text-sm font-medium">{post.likes}</span>
-                    </button>
-                    <button
-                      onClick={() => handleComment(post.id)}
-                      className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors group"
-                    >
-                      <MessageSquare
-                        size={20}
-                        className="group-hover:scale-110 transition-transform"
-                      />
-                      <span className="text-sm font-medium">
-                        {post.comments}
-                      </span>
-                    </button>
-                  </div>
-                  <button className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
-                    Report
-                  </button>
-                </div>
-              </div>
-            </div>
+            <PostCard key={post.id} post={post} />
           ))}
         </div>
-      </main>
+      )}
 
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        // feature="Lounge"
-      />
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setShowPostModal(true)}
+        className="fixed bottom-24 right-4 w-14 h-14 bg-brand-red text-white rounded-full shadow-lg shadow-red-500/20 flex items-center justify-center hover:bg-red-700 transition-colors z-50"
+      >
+        <Plus size={24} />
+      </button>
+
+      {/* Post Modal */}
+      <Modal
+        isOpen={showPostModal}
+        onClose={() => !isPosting && setShowPostModal(false)}
+        title="Create Post"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="What's on your mind?"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-red bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+            rows={4}
+            disabled={isPosting}
+          />
+
+          {mediaPreview && (
+            <div className="relative">
+              <img src={mediaPreview} alt="Preview" className="rounded-xl" />
+              <button
+                type="button"
+                onClick={() => {
+                  setMediaFile(null);
+                  setMediaPreview(null);
+                }}
+                className="absolute top-2 right-2 p-1 bg-gray-900/50 rounded-full text-white hover:bg-gray-900/75"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <label className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer">
+              <ImageIcon size={20} />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+                disabled={isPosting}
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={!text.trim() || isPosting}
+              className="px-4 py-2 bg-brand-red text-white rounded-xl flex items-center gap-2 disabled:opacity-50"
+            >
+              {isPosting ? (
+                <Loader className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send size={16} />
+              )}
+              Post
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

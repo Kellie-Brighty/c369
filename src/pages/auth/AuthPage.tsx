@@ -103,3 +103,4 @@ export const AuthPage = () => {
     </div>
   );
 };
+ 

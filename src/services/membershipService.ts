@@ -17,6 +17,17 @@ export const getMembershipDetails = async () => {
   return userDoc.data();
 };
 
+export const cancelMembership = async () => {
+  if (!auth.currentUser) throw new Error("No authenticated user");
+  const userRef = doc(db, "users", auth.currentUser.uid);
+  await updateDoc(userRef, {
+    membershipType: "free",
+    membershipUpdatedAt: new Date().toISOString(),
+    membershipExpiryDate: null,
+    membershipQR: null,
+  });
+};
+
 export const updateMembership = async (planId: PlanId) => {
   if (!auth.currentUser) throw new Error("No authenticated user");
   if (planId === "free") throw new Error("Cannot upgrade to free plan");
